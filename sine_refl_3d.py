@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
@@ -99,7 +101,15 @@ anim = FuncAnimation(
     fig, animate, frames=frames, interval=1000/fps, blit=False
 )
 
-# writer = PillowWriter(fps=35)
-# anim.save("gifs/sine_refl_3d.gif", writer=writer)
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-mg', '-g', '--make_gif',
+    action="store_true",
+)
+args = parser.parse_args()
+
+if args.make_gif:
+    writer = PillowWriter(fps=25)
+    anim.save("gifs/sine_refl_3d.gif", writer=writer)
 
 plt.show()

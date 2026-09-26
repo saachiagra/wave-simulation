@@ -14,15 +14,17 @@
 # boundary: u=0
 
 import math
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
+import argparse
 
 # ==================== MATH ========================
 
 num_cells = 103     # including boundary cells
-cells = []          # array of tuples: (h_i, u_i)
-U = []              # (h_i, h_i * u_i)
+cells = []          # array of lists: [h_i, u_i]
+U = []              # [h_i, h_i * u_i]
 flux = []
 dx = 0.05
 x = np.arange(num_cells-2) * dx
@@ -100,7 +102,8 @@ def init_vals():
     
     h = np.full(num_cells, init_height)
     x_val = np.arange(num_cells) * dx
-    h += 1.2*np.exp(-((x_val-3.0)/0.3)**2)
+    peak_center = random.uniform(1.0, 4.0)
+    h += 1.2*np.exp(-((x_val - peak_center)/0.3)**2)
     hu = np.zeros(num_cells)
 
     U = [list(pair) for pair in zip(h, hu)]
@@ -134,7 +137,8 @@ frames = 500
 def animate(i):
     global fill
 
-    iteration()
+    if i > 5:
+        iteration()
     height = [U[i][0] for i in range(1, num_cells-1)]
 
     if fill is not None:
@@ -152,7 +156,17 @@ anim = FuncAnimation(
     fig, animate, init_func=init, frames=frames, interval=1000/fps, blit=False
 )
 
-# writer = PillowWriter(fps=35)
-# anim.save("gifs/sine_refl.gif", writer=writer)
+# ==================== GIF ========================
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-mg', '-g', '--make_gif',
+    action="store_true",
+)
+args = parser.parse_args()
+
+if args.make_gif:
+    writer = PillowWriter(fps=35)
+    anim.save("gifs/swe_1d.gif", writer=writer)
 
 plt.show()
