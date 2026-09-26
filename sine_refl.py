@@ -79,7 +79,7 @@ anim = FuncAnimation(
     fig, animate, init_func=init, frames=frames, interval=1000/fps, blit=False
 )
 
-writer = PillowWriter(fps=35)
-anim.save("gifs/sine_refl.gif", writer=writer)
+# writer = PillowWriter(fps=35)
+# anim.save("gifs/sine_refl.gif", writer=writer)
 
 plt.show()
