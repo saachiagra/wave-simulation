@@ -1,0 +1,6 @@
+[submodule "omni.wave.surface"]
+	path = omni.wave.surface
+	url = https://github.com/utaustin-rsn/omni.wave.surface.git
+[submodule "robot_bridge"]
+	path = robot_bridge
+	url = https://github.com/utaustin-rsn/robot_bridge.git
