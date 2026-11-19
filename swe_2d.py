@@ -40,7 +40,7 @@ dx = 0.05
 dy = 0.05
 C = 0.4
 g = 9.81
-dt = 0.1
+dt = None
 
 huv = np.zeros((num_x, num_y, 3))
 U = np.zeros((num_x, num_y, 3))
@@ -51,10 +51,10 @@ G = np.zeros((num_x, num_y, 3))
 def del_t_update():
     global dt
     s_x = np.max([[
-            abs(huv[i][j][1])+math.sqrt(g*huv[i][j][0]) for j in range(1, num_y-1)
+            abs(huv[i, j, 1])+math.sqrt(g*huv[i, j, 0]) for j in range(1, num_y-1)
         ] for i in range(1, num_x-1)])
     s_y = np.max([[
-            abs(huv[i][j][2])+math.sqrt(g*huv[i][j][0]) for j in range(1, num_y-1)
+            abs(huv[i, j, 2])+math.sqrt(g*huv[i, j, 0]) for j in range(1, num_y-1)
         ] for i in range(1, num_x-1)])
     dt = C * min(dx / s_x, dy / s_y)
 
@@ -62,22 +62,22 @@ def del_t_update():
 def F_rusanov(i_1, i_2, j):
     new_F = np.zeros(3)
     s = s_max(i_1, j, i_2, j, 1, 0)
-    new_F += 0.5*(F[i_1][j] + F[i_2][j])
-    new_F -= 0.5*(U[i_2][j] - U[i_1][j])*s
+    new_F += 0.5*(F[i_1, j] + F[i_2, j])
+    new_F -= 0.5*(U[i_2, j] - U[i_1, j])*s
     return new_F
 
 # G_{i, j+1/2} = 0.5(F_{i,j} + F{i, j+1}) - 0.5 s_max*(U_{i, j+1} - U_{i, j})
 def G_rusanov(i, j_1, j_2):
     new_G = np.zeros(3)
     s = s_max(i, j_1, i, j_2, 0, 1)
-    new_G += 0.5*(G[i][j_1] + G[i][j_2])
-    new_G -= 0.5*(U[i][j_2]-U[i][j_1])*s
+    new_G += 0.5*(G[i, j_1] + G[i, j_2])
+    new_G -= 0.5*(U[i, j_2] - U[i, j_1])*s
     return new_G
 
 # s_{max} = max(|u_L*n_x + v_L*n_y| + sqrt(g*h_L), |u_R*n_x + v_R*n_y| + sqrt(g*h_R))
 def s_max(i_1, j_1, i_2, j_2, n_x, n_y):
-    huv_L = huv[i_1][j_1]
-    huv_R = huv[i_2][j_2]
+    huv_L = huv[i_1, j_1]
+    huv_R = huv[i_2, j_2]
     return max(
         abs(huv_L[1]*n_x + huv_L[2]*n_y) + math.sqrt(g*huv_L[0]),
         abs(huv_R[1]*n_x + huv_R[2]*n_y) + math.sqrt(g*huv_R[0])
@@ -85,19 +85,19 @@ def s_max(i_1, j_1, i_2, j_2, n_x, n_y):
 
 # U_{k+1} = U_k - (del t / del x)(F_{i+1/2, j} - F_{i-1/2, j}) - (del t / del y)(G_{i, j+1/2} - G_{i, j-1/2})
 def U_update(i, j, F_diff, G_diff):
-    U[i][j] -= (dt/dx)*(F_diff) + (dt/dy)*(G_diff)
+    U[i, j] -= (dt/dx)*(F_diff) + (dt/dy)*(G_diff)
     huv_update(i, j)
 
 # huv = [h, u, v]
 def huv_update(i, j):
-    height = U[i][j][0]
-    huv[i][j][0] = height
-    huv[i][j][1] = U[i][j][1] / height
-    huv[i][j][2] = U[i][j][2] / height
+    height = max(U[i, j, 0], 1e-6)
+    huv[i, j, 0] = height
+    huv[i, j, 1] = U[i, j, 1] / height
+    huv[i, j, 2] = U[i, j, 2] / height
 
 # F = [hu, hu^2 + 0.5gh^2, huv]
 def F_update(i, j):
-    h, u, v = huv[i][j]
+    h, u, v = huv[i, j]
     F[i, j] = [
         h*u,
         h*u*u + 0.5*g*h*h,
@@ -106,7 +106,7 @@ def F_update(i, j):
 
 # G = [hv, huv, hv^2 + 0.5gh^2]
 def G_update(i, j):
-    h, u, v = huv[i][j]
+    h, u, v = huv[i, j]
     G[i, j] = [
         h*v,
         h*u*v,
@@ -115,25 +115,25 @@ def G_update(i, j):
 
 def boundary_update():
     for i in range(1, num_x-1):
-        U[i][0][0] = U[i][1][0]
-        U[i][0][1] = U[i][1][1]
-        U[i][0][2] = -U[i][1][2]
+        U[i, 0, 0] = U[i, 1, 0]
+        U[i, 0, 1] = U[i, 1, 1]
+        U[i, 0, 2] = -U[i, 1, 2]
         huv_update(i, 0)
 
-        U[i][-1][0] = U[i][-2][0]
-        U[i][-1][1] = U[i][-2][1]
-        U[i][-1][2] = -U[i][-2][2]
+        U[i, -1, 0] = U[i, -2, 0]
+        U[i, -1, 1] = U[i, -2, 1]
+        U[i, -1, 2] = -U[i, -2, 2]
         huv_update(i, -1)
 
     for i in range(1, num_y-1):
-        U[0][i][0] = U[1][i][0]
-        U[0][i][1] = -U[1][i][1]
-        U[0][i][2] = U[1][i][2]
+        U[0, i, 0] = U[1, i, 0]
+        U[0, i, 1] = -U[1, i, 1]
+        U[0, i, 2] = U[1, i, 2]
         huv_update(0, i)
 
-        U[-1][i][0] = U[-2][i][0]
-        U[-1][i][1] = -U[-2][i][1]
-        U[-1][i][2] = U[-2][i][2]
+        U[-1, i, 0] = U[-2, i, 0]
+        U[-1, i, 1] = -U[-2, i, 1]
+        U[-1, i, 2] = U[-2, i, 2]
         huv_update(-1, i)
 
 def iteration():
@@ -144,13 +144,13 @@ def iteration():
             F_update(i, j)
             G_update(i, j)
 
-    get_F_rus = [[F_rusanov(i, i+1, j) for j in range(num_y-1)] for i in range(num_x-1)]
-    get_G_rus = [[G_rusanov(i, j, j+1) for j in range(num_y-1)] for i in range(num_x)]
+    get_F_rus = np.array([[F_rusanov(i, i+1, j) for j in range(num_y-1)] for i in range(num_x-1)])
+    get_G_rus = np.array([[G_rusanov(i, j, j+1) for j in range(num_y-1)] for i in range(num_x)])
 
     for i in range(1, num_x-1):
         for j in range(1, num_y-1):
-            F_diff = get_F_rus[i][j] - get_F_rus[i-1][j]
-            G_diff = get_G_rus[i][j] - get_G_rus[i][j-1]
+            F_diff = get_F_rus[i, j] - get_F_rus[i-1, j]
+            G_diff = get_G_rus[i, j] - get_G_rus[i, j-1]
             U_update(i, j, F_diff, G_diff)
 
 def init():
@@ -215,7 +215,7 @@ def animate(i):
         iteration()
 
     Z = np.array([
-        [huv[i][j][0] - 2.0 for j in range(1, num_y-1)] for i in range(1, num_x-1)
+        [huv[i, j, 0] - 2.0 for j in range(1, num_y-1)] for i in range(1, num_x-1)
     ])
 
     surface[0].remove()
@@ -230,7 +230,7 @@ def animate(i):
     return surface
 
 anim = FuncAnimation(
-    fig, animate, frames=frames, interval=1000/fps, blit=False
+    fig, animate, frames=frames, blit=False, interval=int(1000/fps)
 )
 
 parser = argparse.ArgumentParser()
